@@ -35,6 +35,5 @@ namespace WspBussiness.Controllers
             // Siempre responder 200 OK a Meta
             return Ok(JsonSerializer.Serialize(JsonDocument.Parse(body), new JsonSerializerOptions { WriteIndented = true }));
         }
-
     }
 }
