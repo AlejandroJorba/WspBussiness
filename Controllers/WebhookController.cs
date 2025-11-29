@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
+using WspBussiness.Models;
 
 namespace WspBussiness.Controllers
 {
@@ -39,23 +40,38 @@ namespace WspBussiness.Controllers
         [HttpPost]
         public async Task<IActionResult> Post()
         {
-            try
+            using var reader = new StreamReader(Request.Body);
+            var body = await reader.ReadToEndAsync();
+
+            // Parsear con System.Text.Json
+            var options = new JsonSerializerOptions
             {
-                using var reader = new StreamReader(Request.Body);
-                var body = await reader.ReadToEndAsync();
+                PropertyNameCaseInsensitive = true
+            };
 
-                _logger.LogInformation($"Mensaje recibido: {body}");
+            var webhook = JsonSerializer.Deserialize<WhatsappResponse>(body, options);
 
-                // Procesar el mensaje aquí
-                var json = JsonDocument.Parse(body);
+            // Obtener el mensaje parseado como objeto
+            var usuario = webhook?.Entry?[0]?.Changes?[0]?.Value?.Contacts?[0];
+            var mensaje = webhook?.Entry?[0]?.Changes?[0]?.Value?.Messages?[0];
 
-                return Ok(); // Meta solo necesita un 200 OK
-            }
-            catch (Exception ex)
+            if (mensaje != null)
             {
-                _logger.LogError($"Error procesando webhook: {ex.Message}");
-                return Ok(); // Igual devolver 200 para no reintentos
+                var data = new WebhookResponse
+                {
+                    Nombre = usuario?.Profile?.Name,
+                    Mensaje = mensaje.Text?.Body,
+                    Horario = DateTimeOffset.FromUnixTimeSeconds(long.Parse(mensaje.Timestamp)).DateTime,
+                    Numero = mensaje.From
+                };
+
+                // Retornar solo el objeto Message
+                return Ok(data);
             }
+
+            return Ok();
         }
+
+
     }
 }
