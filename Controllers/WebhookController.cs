@@ -8,32 +8,54 @@ namespace WspBussiness.Controllers
     [ApiController]
     public class WebhookController : ControllerBase
     {
-        // Token que vos definís en Meta
         private const string VERIFY_TOKEN = "chinchulin";
+        private readonly ILogger<WebhookController> _logger;
 
-        // GET /webhook -> Verificación
-        [HttpGet]
-        public IActionResult Get([FromQuery(Name = "hub.mode")] string mode,
-                                 [FromQuery(Name = "hub.verify_token")] string token,
-                                 [FromQuery(Name = "hub.challenge")] string challenge)
+        public WebhookController(ILogger<WebhookController> logger)
         {
-            if (mode == "subscribe" && token == VERIFY_TOKEN)
-            {
-                return Content(challenge); // Devuelve el challenge a Meta
-            }
-
-            return Forbid();
+            _logger = logger;
         }
 
-        // POST /webhook -> Recibir mensajes
+        // GET /api/webhook -> Verificación
+        [HttpGet]
+        public IActionResult Get(
+            [FromQuery(Name = "hub.mode")] string mode,
+            [FromQuery(Name = "hub.verify_token")] string token,
+            [FromQuery(Name = "hub.challenge")] string challenge)
+        {
+            _logger.LogInformation($"Verificación recibida - Mode: {mode}, Token: {token}, Challenge: {challenge}");
+
+            if (mode == "subscribe" && token == VERIFY_TOKEN)
+            {
+                _logger.LogInformation("✅ Verificación exitosa");
+                return Content(challenge);
+            }
+
+            _logger.LogWarning("❌ Verificación fallida");
+            return Unauthorized("Token inválido");
+        }
+
+        // POST /api/webhook -> Recibir mensajes
         [HttpPost]
         public async Task<IActionResult> Post()
         {
-            using var reader = new StreamReader(Request.Body);
-            var body = await reader.ReadToEndAsync();
+            try
+            {
+                using var reader = new StreamReader(Request.Body);
+                var body = await reader.ReadToEndAsync();
 
-            // Siempre responder 200 OK a Meta
-            return Ok(JsonSerializer.Serialize(JsonDocument.Parse(body), new JsonSerializerOptions { WriteIndented = true }));
+                _logger.LogInformation($"Mensaje recibido: {body}");
+
+                // Procesar el mensaje aquí
+                var json = JsonDocument.Parse(body);
+
+                return Ok(); // Meta solo necesita un 200 OK
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error procesando webhook: {ex.Message}");
+                return Ok(); // Igual devolver 200 para no reintentos
+            }
         }
     }
 }
