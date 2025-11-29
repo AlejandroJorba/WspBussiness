@@ -1,0 +1,6 @@
+@WspBussiness_HostAddress = http://localhost:5114
+
+GET {{WspBussiness_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
