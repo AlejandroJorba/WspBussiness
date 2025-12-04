@@ -12,7 +12,7 @@ namespace WspBussiness.Controllers
     {
         private const string VERIFY_TOKEN = "chinchulin";
         private const string phoneNumberId = "901966789667192";
-        private const string token = "EABEudZCaOoMIBQP26D1kA0ZAZCLwarTjkwaGH9sIslvCKvBfHg89LGXmodP9UrBhfJ5u0aLugjMH4LkjZBEinqTnhwvZAIgOqVkP5rvv9v4JzQW8dmIZB8Dvl244x5qpEl6NzHViNBkScuYiUOy5l7m7OKs9DO30qImzap1Bxb5AsL5GPhCTCunjSLdOQQDJoSvZCfZB1DA8imdzaX6nrAZCxglRYMVGKM8KY1Jj9NNTd3uXrKdQhMk5QmqDNpIlJtocl8N6PeAjxqPQZC1ctAYxUC6wZDZD";
+        private const string token = "EABEudZCaOoMIBQKMI8HXgZC18JWjtDwXYQua7ZA0ZBDQdy58ToZA0asMqavbUjq8NNYfgsAYB1QSZAw6VThZCbGNsQRkcw0Hv5uQC2zPiWmFkC1hYwz7aHiZAzJDspkD2oPVZAdxWI8ATC3nbwN5IZCe3QxAP93Dgt1mPmm2Jnh0BQXFsKFBhPHK0c9SZAlmFAaCu7KvyXisRuICarUy9gJtwDVt8EdTWvZCLXNY2kUbCotxsSC7RuGIZAt4krfQgVUCmCFUwFTRkuLR614t47D5IZBXOw";
         private readonly ILogger<WebhookController> _logger;
 
         public WebhookController(ILogger<WebhookController> logger)
