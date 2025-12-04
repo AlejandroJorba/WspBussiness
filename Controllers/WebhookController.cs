@@ -50,7 +50,6 @@ namespace WspBussiness.Controllers
 
                 _logger.LogInformation($"📨 JSON recibido: {body}");
 
-                // Parsear con System.Text.Json
                 var options = new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
@@ -58,60 +57,65 @@ namespace WspBussiness.Controllers
 
                 var webhook = JsonSerializer.Deserialize<WhatsappResponse>(body, options);
 
-                _logger.LogInformation($"✅ JSON deserializado correctamente");
-
-                // Obtener el mensaje parseado como objeto
                 var usuario = webhook?.Entry?[0]?.Changes?[0]?.Value?.Contacts?[0];
                 var mensaje = webhook?.Entry?[0]?.Changes?[0]?.Value?.Messages?[0];
 
-                _logger.LogInformation($"Usuario: {usuario?.Profile?.Name ?? "NULL"}");
-                _logger.LogInformation($"Mensaje: {mensaje?.Text?.Body ?? "NULL"}");
-                _logger.LogInformation($"From: {mensaje?.From ?? "NULL"}");
-                _logger.LogInformation($"Timestamp: {mensaje?.Timestamp ?? "NULL"}");
+                if (mensaje == null)
+                    return Ok(); // Meta siempre pide 200
 
-                // 🟦 Si tocó un botón
+                string nombre = usuario?.Profile?.Name ?? "";
+                string from = mensaje.From;
+
+                // ============================================
+                // 🟦 1️⃣ SI TOCÓ UN BOTÓN (Botón de plantilla)
+                // ============================================
                 if (mensaje.Button != null)
                 {
                     string opcion = mensaje.Button.Text ?? mensaje.Button.Payload;
-
-                    _logger.LogInformation($"➡️ Botón seleccionado: {opcion}");
+                    _logger.LogInformation($"➡️ BOTÓN SELECCIONADO: {opcion}");
 
                     if (opcion == "Realizar un pedido")
                     {
-                        // 👉 enviás plantilla para pedir los datos
-                        await EnviarPlantillaAsync(
-                            mensaje.From,
-                            usuario?.Profile?.Name ?? "",
-                            "plantilla_pedir_datos"   // reemplazá por el nombre real
-                        );
-
+                        await EnviarPlantillaAsync(from, nombre, "plantilla_pedir_datos");
                         return Ok();
                     }
 
                     if (opcion == "Ver estado de pedido")
                     {
-                        // 👉 pedís el número del pedido
-                        await EnviarTextoAsync(
-                            mensaje.From,
-                            "Decime el número de pedido para buscar el estado."
-                        );
-
+                        await EnviarTextoAsync(from, "Por favor enviá el número del pedido 🧾");
                         return Ok();
                     }
                 }
 
+                // ============================================
+                // 🟩 2️⃣ MENSAJE DE TEXTO NORMAL
+                //    (si contiene la palabra "pedido")
+                // ============================================
+                string texto = mensaje.Text?.Body?.ToLower() ?? "";
 
-                _logger.LogWarning("⚠️ mensaje es NULL");
+                if (texto.Contains("pedido"))
+                {
+                    _logger.LogInformation("📌 El usuario mencionó 'pedido', se envía la plantilla inicial.");
+
+                    await EnviarPlantillaAsync(
+                        from,
+                        nombre,
+                        "opciones_iniciales" // ESTA ES TU PLANTILLA DE INICIO
+                    );
+
+                    return Ok();
+                }
+
+                // Si no contiene "pedido", no hacer nada
                 return Ok();
             }
             catch (Exception ex)
             {
                 _logger.LogError($"❌ Error: {ex.Message}");
-                _logger.LogError($"❌ StackTrace: {ex.StackTrace}");
-                return Ok(); // Siempre 200 para Meta
+                _logger.LogError(ex.StackTrace);
+                return Ok();
             }
         }
-
 
         private async Task EnviarPlantillaAsync(string numero, string nombrePersona, string nombrePlantilla)
         {
