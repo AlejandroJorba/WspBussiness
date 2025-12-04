@@ -66,7 +66,6 @@ namespace WspBussiness.Controllers
                 string nombre = usuario?.Profile?.Name ?? "";
                 string from = mensaje.From;
                 await EnviarTextoAsync(from, "Por favor enviá el número del pedido 🧾");
-                return Ok();
 
                 // ============================================
                 // 🟦 1️⃣ SI TOCÓ UN BOTÓN (Botón de plantilla)
@@ -123,7 +122,7 @@ namespace WspBussiness.Controllers
         {
             try
             {
-                var url = $"https://graph.facebook.com/v20.0/{phoneNumberId}/messages";
+                var url = $"https://graph.facebook.com/v24.0/{phoneNumberId}/messages";
                 _logger.LogInformation("📤 La plantilla se va a enviar al numero: " + numero);
 
                 var payload = new
@@ -168,7 +167,7 @@ namespace WspBussiness.Controllers
 
         private async Task EnviarTextoAsync(string numero, string texto)
         {
-            var url = $"https://graph.facebook.com/v20.0/{phoneNumberId}/messages";
+            var url = $"https://graph.facebook.com/v24.0/{phoneNumberId}/messages";
 
             var payload = new
             {
