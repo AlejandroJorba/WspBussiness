@@ -122,6 +122,7 @@ namespace WspBussiness.Controllers
             try
             {
                 var url = $"https://graph.facebook.com/v20.0/{phoneNumberId}/messages";
+                _logger.LogInformation("📤 La plantilla se va a enviar al numero: " + numero);
 
                 var payload = new
                 {
