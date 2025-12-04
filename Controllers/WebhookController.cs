@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Text;
 using System.Text.Json;
 using WspBussiness.Models;
 
@@ -10,6 +11,8 @@ namespace WspBussiness.Controllers
     public class WebhookController : ControllerBase
     {
         private const string VERIFY_TOKEN = "chinchulin";
+        private const string phoneNumberId = "1533339991147357";
+        private const string token = "EAAjd2zosSf4BQL0SoRTGmp7zELiL1ZBQZB2iTVV6NDt7EEZAdhMMISDZBy9b38UnOxt07L9Y4tWfZCjHbafNIPoWwxAZAz6wWFKf2KdPfDr5ZBtSZAZCkvF9jVOe0ZAWaHKMVByABmpLyJJLovFw4D0qoBmhG2sJfeX9eJcrdXO60cRLzK2RHotnCgZBMHOfK9fJUBxnGTIHq48XpL9a7f0dI9LaMMx6NXNewae";
         private readonly ILogger<WebhookController> _logger;
 
         public WebhookController(ILogger<WebhookController> logger)
@@ -68,17 +71,24 @@ namespace WspBussiness.Controllers
 
                 if (mensaje != null)
                 {
+                    var nombre = usuario?.Profile?.Name ?? "amigo";
+                    var numero = mensaje.From;
+
+                    // 👉 Enviar plantilla genérica
+                    await EnviarPlantillaAsync(
+                        numero,
+                        nombre,
+                        "opciones_iniciales" // nombre de tu plantilla
+                    );
+
                     var data = new WebhookResponse
                     {
-                        Nombre = usuario?.Profile?.Name,
+                        Nombre = nombre,
                         Mensaje = mensaje.Text?.Body,
                         Horario = DateTimeOffset.FromUnixTimeSeconds(long.Parse(mensaje.Timestamp)).DateTime,
-                        Numero = mensaje.From
+                        Numero = numero
                     };
 
-                    _logger.LogInformation($"✅ Respuesta creada: {JsonSerializer.Serialize(data)}");
-
-                    // Retornar solo el objeto Message
                     return Ok(data);
                 }
 
@@ -91,6 +101,73 @@ namespace WspBussiness.Controllers
                 _logger.LogError($"❌ StackTrace: {ex.StackTrace}");
                 return Ok(); // Siempre 200 para Meta
             }
+        }
+
+
+        private async Task EnviarPlantillaAsync(string numero, string nombrePersona, string nombrePlantilla)
+        {
+            try
+            {
+                var url = $"https://graph.facebook.com/v20.0/{phoneNumberId}/messages";
+
+                var payload = new
+                {
+                    messaging_product = "whatsapp",
+                    to = numero,
+                    type = "template",
+                    template = new
+                    {
+                        name = nombrePlantilla,
+                        language = new { code = "es_AR" },
+                        components = new[]
+                        {
+                    new {
+                        type = "body",
+                        parameters = new[]
+                        {
+                            new { type = "text", text = nombrePersona }
+                        }
+                    }
+                }
+                    }
+                };
+
+                var json = JsonSerializer.Serialize(payload);
+                using var http = new HttpClient();
+                http.DefaultRequestHeaders.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var response = await http.PostAsync(url, content);
+
+                var resultado = await response.Content.ReadAsStringAsync();
+                _logger.LogInformation("📤 Respuesta de WhatsApp: " + resultado);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("❌ Error enviando plantilla: " + ex.Message);
+            }
+        }
+
+
+        private async Task EnviarTextoAsync(string numero, string texto)
+        {
+            var url = $"https://graph.facebook.com/v20.0/{phoneId}/messages";
+
+            var payload = new
+            {
+                messaging_product = "whatsapp",
+                to = numero,
+                type = "text",
+                text = new { body = texto }
+            };
+
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+            await client.PostAsync(url, content);
         }
 
     }
