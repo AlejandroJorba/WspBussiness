@@ -51,10 +51,18 @@
         public string Timestamp { get; set; }
         public string Type { get; set; }
         public TextBody Text { get; set; }
+        public ButtonMessage Button { get; set; }
     }
 
     public class TextBody
     {
         public string Body { get; set; }
     }
+
+    public class ButtonMessage
+    {
+        public string Text { get; set; }
+        public string Payload { get; set; }
+    }
+
 }

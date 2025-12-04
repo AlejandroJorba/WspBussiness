@@ -69,28 +69,37 @@ namespace WspBussiness.Controllers
                 _logger.LogInformation($"From: {mensaje?.From ?? "NULL"}");
                 _logger.LogInformation($"Timestamp: {mensaje?.Timestamp ?? "NULL"}");
 
-                if (mensaje != null)
+                // 🟦 Si tocó un botón
+                if (mensaje.Button != null)
                 {
-                    var nombre = usuario?.Profile?.Name ?? "amigo";
-                    var numero = mensaje.From;
+                    string opcion = mensaje.Button.Text ?? mensaje.Button.Payload;
 
-                    // 👉 Enviar plantilla genérica
-                    await EnviarPlantillaAsync(
-                        numero,
-                        nombre,
-                        "opciones_iniciales" // nombre de tu plantilla
-                    );
+                    _logger.LogInformation($"➡️ Botón seleccionado: {opcion}");
 
-                    var data = new WebhookResponse
+                    if (opcion == "Realizar un pedido")
                     {
-                        Nombre = nombre,
-                        Mensaje = mensaje.Text?.Body,
-                        Horario = DateTimeOffset.FromUnixTimeSeconds(long.Parse(mensaje.Timestamp)).DateTime,
-                        Numero = numero
-                    };
+                        // 👉 enviás plantilla para pedir los datos
+                        await EnviarPlantillaAsync(
+                            mensaje.From,
+                            usuario?.Profile?.Name ?? "",
+                            "plantilla_pedir_datos"   // reemplazá por el nombre real
+                        );
 
-                    return Ok(data);
+                        return Ok();
+                    }
+
+                    if (opcion == "Ver estado de pedido")
+                    {
+                        // 👉 pedís el número del pedido
+                        await EnviarTextoAsync(
+                            mensaje.From,
+                            "Decime el número de pedido para buscar el estado."
+                        );
+
+                        return Ok();
+                    }
                 }
+
 
                 _logger.LogWarning("⚠️ mensaje es NULL");
                 return Ok();
@@ -152,7 +161,7 @@ namespace WspBussiness.Controllers
 
         private async Task EnviarTextoAsync(string numero, string texto)
         {
-            var url = $"https://graph.facebook.com/v20.0/{phoneId}/messages";
+            var url = $"https://graph.facebook.com/v20.0/{phoneNumberId}/messages";
 
             var payload = new
             {
